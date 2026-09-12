@@ -60,8 +60,12 @@ CANALES = [
     dict(clave="cinecanal", nombre="CineCanal", grupo="Cine", cine=True,
          color="#e11d48", gato="cinecanal_ecuador",
          ec=r"^Canal\.Cinecanal\.", co=r"^Cinecanal\.co$"),
+    # HBO: comprobado el 11/09/2026 contra la senal real. gatotv daba una
+    # parrilla equivocada ("En el camino") y el archivo de Colombia daba la
+    # correcta ("La posesion de la momia"), igual que en HBO Family. Por eso
+    # este canal no usa gatotv.
     dict(clave="hbo", nombre="HBO", grupo="Cine", cine=True,
-         color="#7c3aed", gato="hbo_ecuador",
+         color="#7c3aed", gato=None,
          ec=None, co=r"^HBO\.co$"),
     dict(clave="hbo2", nombre="HBO 2", grupo="Cine", cine=True,
          color="#8b5cf6", gato=None, ec=None, co=r"^HBO\.2\.co$"),
@@ -83,9 +87,13 @@ CANALES = [
     dict(clave="tcm", nombre="TCM", grupo="Cine", cine=True,
          color="#b45309", gato="tcm_ecuador",
          ec=r"^Canal\.TCM\.", co=None),
+    # AMC: gatotv no tiene la parrilla de Ecuador ("Canal no disponible") y la
+    # de Colombia va 1 hora atrasada respecto a la senal real (comprobado el
+    # 11/09/2026: "Veneno en la sangre" se veia a las 23:37 y la guia la ponia
+    # a las 00:30). Por eso se le resta una hora.
     dict(clave="amc", nombre="AMC", grupo="Cine", cine=True,
-         color="#334155", gato="amc_ecuador",
-         ec=r"^Canal\.AMC\.", co=r"^AMC\.co$"),
+         color="#334155", gato=None,
+         ec=r"^Canal\.AMC\.", co=r"^AMC\.co$", desfase=-1),
 
     # ---- Canales con peliculas y series ---------------------------------
     dict(clave="tnt", nombre="TNT", grupo="Peliculas y series", cine=False,
@@ -348,6 +356,10 @@ PISTA_SERIE = re.compile(
     r"f[uú]tbol|magazine|informativo|entrevista|reality|talk\s?show)\b", re.I)
 PISTA_PELICULA = re.compile(r"pel[ií]cula|cine|film|largometraje", re.I)
 
+# Bloques de programacion que duran como una pelicula pero no lo son
+BLOQUE = re.compile(r"series block|bloque|marat[oó]n|back to back|programaci[oó]n|"
+                    r"especial de series|lo mejor de", re.I)
+
 
 def clasificar(programa, canal):
     """
@@ -375,11 +387,13 @@ def clasificar(programa, canal):
             return "si"
         if programa.get("tipo_crudo") in ("documental", "deporte", "noticias"):
             return "no"
-        if PISTA_SERIE.search(programa["titulo"]):
+        if PISTA_SERIE.search(programa["titulo"]) or BLOQUE.search(programa["titulo"]):
             return "no"
-        # gatotv a veces marca como "programa" peliculas de verdad
-        # (pasa en TNT, Space, FX). Si dura como pelicula, lo verificamos.
-        return "quiza" if minutos >= 80 else "no"
+        # gatotv marca como "programa" muchas peliculas de verdad: pasa en TNT,
+        # Space y FX (Jumanji, La Mascara, Plan de Escape...). Si dura como
+        # pelicula, no trae marca de episodio y no es un bloque de series,
+        # la damos por buena aunque TMDB no la encuentre.
+        return "si" if minutos >= 80 else "no"
 
     # --- Programas que vienen del XMLTV ----------------------------------
     categorias = " ".join(programa.get("categorias") or [])
@@ -639,15 +653,21 @@ def main():
             cid = buscar_canal(indice, patron)
             if not cid:
                 continue
+            dias_utiles = set()
             for p in indice[cid]:
                 dia = p["inicio"].date()
                 if dia not in fechas or dia in dias_con_datos:
                     continue
+                # El relleno ("Canal no disponible") no cuenta como dato: si
+                # lo dejaramos pasar, taparia la otra fuente, que si sirve.
+                if RELLENO.match(p["titulo"] or ""):
+                    continue
                 crudos.append((canal, dict(p)))
+                dias_utiles.add(dia)
                 encontrados += 1
             if canal["gato"] is None:
                 # Canal sin gatotv: con la primera fuente que dio datos basta
-                dias_con_datos |= {p["inicio"].date() for p in indice[cid]}
+                dias_con_datos |= dias_utiles
 
         aviso(f"  {canal['nombre']:<18} {encontrados:>4} programas")
 
@@ -660,6 +680,12 @@ def main():
             continue
         if veredicto == "quiza":
             dudosas += 1
+
+        # Correccion de horario para los canales cuya senal en Ecuador va
+        # adelantada o atrasada respecto a la guia publicada
+        if canal.get("desfase"):
+            ajuste = dt.timedelta(hours=canal["desfase"])
+            p = dict(p, inicio=p["inicio"] + ajuste, fin=p["fin"] + ajuste)
         llave = (canal["clave"], p["inicio"].isoformat(), clave_titulo(p["titulo"]))
         if llave in vistos:
             continue
