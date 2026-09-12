@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es-EC">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cartelera del Cable</title>
+
+<!-- Para que se vea como una app al agregarla a la pantalla de inicio del iPad -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cartelera">
+<meta name="theme-color" content="#0b0d12">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icono-180.png">
+<link rel="icon" href="icono-180.png">
+
+<style>
+  :root{
+    --fondo:#0b0d12;
+    --fondo2:#11141c;
+    --tarjeta:#161a24;
+    --tarjeta2:#1d2230;
+    --borde:#262c3b;
+    --texto:#eef1f7;
+    --suave:#9aa3b7;
+    --tenue:#6b7488;
+    --oro:#f0b429;
+    --acento:#5b8cff;
+    --ahora:#22c55e;
+    --r:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--fondo);
+    color:var(--texto);
+    font:16px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ----- Cabecera ----- */
+  header{
+    position:sticky;top:0;z-index:30;
+    background:rgba(11,13,18,.86);
+    backdrop-filter:saturate(150%) blur(14px);
+    -webkit-backdrop-filter:saturate(150%) blur(14px);
+    border-bottom:1px solid var(--borde);
+    padding:14px 20px 0;
+  }
+  .titulo-fila{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  h1{font-size:22px;margin:0;letter-spacing:-.3px;font-weight:700}
+  h1 span{color:var(--oro)}
+  .sello{margin-left:auto;font-size:12px;color:var(--tenue);text-align:right;line-height:1.3}
+
+  /* ----- Tiras de botones ----- */
+  .tira{display:flex;gap:8px;overflow-x:auto;padding:12px 0 4px;scrollbar-width:none}
+  .tira::-webkit-scrollbar{display:none}
+  .chip{
+    flex:0 0 auto;border:1px solid var(--borde);background:var(--tarjeta);
+    color:var(--suave);border-radius:999px;padding:9px 16px;font-size:14px;
+    font-weight:600;cursor:pointer;white-space:nowrap;min-height:40px;
+    display:flex;align-items:center;gap:7px;transition:.15s;
+  }
+  .chip:active{transform:scale(.96)}
+  .chip.activo{background:var(--texto);color:#0b0d12;border-color:var(--texto)}
+  .chip .punto{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+  .chip small{font-weight:500;opacity:.65;font-size:12px}
+  .dia .sub{display:block;font-size:11px;font-weight:500;opacity:.7;margin-top:-2px}
+  .dia{flex-direction:column;align-items:flex-start;gap:0;padding:7px 16px}
+
+  .grupo-canales{padding-bottom:10px}
+  .etiqueta-grupo{font-size:11px;color:var(--tenue);text-transform:uppercase;
+    letter-spacing:.9px;font-weight:700;margin:6px 0 0}
+
+  /* ----- Buscador y filtros ----- */
+  .barra{display:flex;gap:10px;align-items:center;padding:2px 0 14px;flex-wrap:wrap}
+  .buscador{flex:1 1 240px;position:relative;min-width:200px}
+  .buscador input{
+    width:100%;background:var(--tarjeta);border:1px solid var(--borde);
+    color:var(--texto);border-radius:12px;padding:11px 14px 11px 40px;
+    font-size:16px;outline:none;min-height:44px;
+  }
+  .buscador input:focus{border-color:var(--acento)}
+  .buscador .lupa{position:absolute;left:14px;top:50%;transform:translateY(-50%);
+    color:var(--tenue);font-size:15px;pointer-events:none}
+
+  /* ----- Contenido ----- */
+  main{padding:18px 20px 60px;max-width:1400px;margin:0 auto}
+  .franja{margin:26px 0 12px;display:flex;align-items:center;gap:12px}
+  .franja h2{font-size:15px;margin:0;color:var(--suave);font-weight:700;
+    text-transform:uppercase;letter-spacing:1px}
+  .franja .linea{flex:1;height:1px;background:var(--borde)}
+  .franja .cuenta{font-size:12px;color:var(--tenue)}
+
+  .rejilla{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(330px,1fr))}
+
+  .peli{
+    background:var(--tarjeta);border:1px solid var(--borde);border-radius:var(--r);
+    display:flex;overflow:hidden;cursor:pointer;transition:.18s;position:relative;
+  }
+  .peli:active{transform:scale(.985)}
+  .peli.enVivo{border-color:var(--ahora)}
+  .poster{
+    flex:0 0 104px;width:104px;background:var(--tarjeta2) center/cover no-repeat;
+    display:flex;align-items:center;justify-content:center;color:var(--tenue);font-size:26px;
+  }
+  .cuerpo{padding:13px 14px;min-width:0;flex:1;display:flex;flex-direction:column;gap:7px}
+
+  .horario{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .horas{font-size:17px;font-weight:800;letter-spacing:-.2px;font-variant-numeric:tabular-nums}
+  .horas .a{color:var(--tenue);font-weight:600;margin:0 3px}
+  .dura{font-size:12px;color:var(--tenue)}
+  .vivo{background:var(--ahora);color:#06240f;font-size:10px;font-weight:800;
+    padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.5px}
+
+  .nombre{font-size:16px;font-weight:700;line-height:1.3;margin:0;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:12.5px;color:var(--suave)}
+  .nota{display:inline-flex;align-items:center;gap:4px;color:var(--oro);font-weight:700}
+  .canal{display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:12px}
+  .canal .punto{width:8px;height:8px;border-radius:50%}
+  .sinopsis{font-size:13px;color:var(--suave);line-height:1.45;margin:0;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .peli.abierta .sinopsis{-webkit-line-clamp:unset;display:block}
+  .peli.abierta .nombre{-webkit-line-clamp:unset}
+
+  .vacio{text-align:center;padding:70px 20px;color:var(--tenue)}
+  .vacio .icono{font-size:46px;margin-bottom:14px;opacity:.5}
+  .vacio h3{color:var(--suave);font-weight:600;margin:0 0 6px;font-size:17px}
+
+  footer{padding:24px 20px 40px;text-align:center;color:var(--tenue);font-size:12px;line-height:1.7}
+  footer a{color:var(--tenue)}
+
+  .cargando{text-align:center;padding:80px 20px;color:var(--tenue)}
+  .giro{width:30px;height:30px;border:3px solid var(--borde);border-top-color:var(--acento);
+    border-radius:50%;animation:girar .8s linear infinite;margin:0 auto 16px}
+  @keyframes girar{to{transform:rotate(360deg)}}
+
+  @media (max-width:720px){
+    main{padding:14px 14px 50px}
+    header{padding:12px 14px 0}
+    .rejilla{grid-template-columns:1fr}
+    h1{font-size:19px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="titulo-fila">
+    <h1>Cartelera del <span>Cable</span></h1>
+    <div class="sello" id="sello"></div>
+  </div>
+
+  <div class="tira" id="dias"></div>
+
+  <div class="barra">
+    <div class="buscador">
+      <span class="lupa">&#128269;</span>
+      <input id="buscar" type="search" placeholder="Buscar una pelicula en todos los dias..."
+             autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <button class="chip" id="btnSoloNoche">Solo la noche</button>
+  </div>
+
+  <div class="grupo-canales">
+    <div class="tira" id="canales"></div>
+  </div>
+</header>
+
+<main id="contenido">
+  <div class="cargando"><div class="giro"></div>Cargando la programacion...</div>
+</main>
+
+<footer>
+  Horarios en hora de Ecuador (UTC-5).<br>
+  Programacion de <a href="https://www.gatotv.com" target="_blank" rel="noopener">gatotv.com</a>
+  &middot; Fichas de peliculas de <a href="https://www.themoviedb.org" target="_blank" rel="noopener">TMDB</a>.<br>
+  <span id="pieActualizado"></span>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  var GUIA = null;
+  var estado = { dia:null, canal:"todos", texto:"", soloNoche:false };
+
+  var FRANJAS = [
+    { clave:"madrugada", nombre:"Madrugada", desde:0,  hasta:6  },
+    { clave:"manana",    nombre:"Mañana",    desde:6,  hasta:12 },
+    { clave:"tarde",     nombre:"Tarde",     desde:12, hasta:18 },
+    { clave:"noche",     nombre:"Noche",     desde:18, hasta:24 }
+  ];
+
+  // Dibujo que aparece cuando la pelicula no tiene poster
+  var SIN_POSTER =
+    '<svg viewBox="0 0 48 48" width="34" height="34" fill="none" ' +
+    'stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="6" y="10" width="36" height="28" rx="3"/>' +
+    '<path d="M14 10v28M34 10v28"/>' +
+    '<path d="M6 19h8M6 29h8M34 19h8M34 29h8"/></svg>';
+
+  var DIAS_SEMANA = ["Dom","Lun","Mar","Mie","Jue","Vie","Sab"];
+  var MESES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+
+  // ---- Fecha y hora de Ecuador, sin importar donde este el iPad ----------
+  function ahoraEcuador(){
+    var d = new Date();
+    return new Date(d.getTime() + (d.getTimezoneOffset() * 60000) - (5 * 3600000));
+  }
+  function hoyEcuador(){
+    var e = ahoraEcuador();
+    return e.getFullYear() + "-" + dos(e.getMonth()+1) + "-" + dos(e.getDate());
+  }
+  function dos(n){ return (n<10?"0":"") + n; }
+
+  function fechaDesdeTexto(iso){
+    var p = iso.split("-");
+    return new Date(+p[0], +p[1]-1, +p[2]);
+  }
+
+  function etiquetaDia(iso){
+    var hoy = hoyEcuador();
+    var d = fechaDesdeTexto(iso);
+    var manana = fechaDesdeTexto(hoy);
+    manana.setDate(manana.getDate()+1);
+    var isoManana = manana.getFullYear()+"-"+dos(manana.getMonth()+1)+"-"+dos(manana.getDate());
+    if (iso === hoy) return { arriba:"HOY", abajo: d.getDate()+" "+MESES[d.getMonth()] };
+    if (iso === isoManana) return { arriba:"Mañana", abajo: d.getDate()+" "+MESES[d.getMonth()] };
+    return { arriba: DIAS_SEMANA[d.getDay()], abajo: d.getDate()+" "+MESES[d.getMonth()] };
+  }
+
+  function normalizar(t){
+    return (t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  }
+
+  function minutosDe(hhmm){
+    var p = (hhmm||"0:0").split(":");
+    return (+p[0])*60 + (+p[1]);
+  }
+
+  // ---- Cargar los datos --------------------------------------------------
+  function cargar(){
+    fetch("datos/guia.json?v=" + Date.now(), { cache:"no-store" })
+      .then(function(r){ if(!r.ok) throw new Error("sin datos"); return r.json(); })
+      .then(arrancar)
+      .catch(function(){
+        // Sin internet: intentamos lo que el iPad haya guardado
+        fetch("datos/guia.json").then(function(r){ return r.json(); })
+          .then(arrancar)
+          .catch(function(){
+            document.getElementById("contenido").innerHTML =
+              '<div class="vacio"><div class="icono">&#128245;</div>' +
+              '<h3>No se pudo cargar la programacion</h3>' +
+              '<p>Conectate a internet y vuelve a abrir la app.</p></div>';
+          });
+      });
+  }
+
+  function arrancar(datos){
+    GUIA = datos;
+    var hoy = hoyEcuador();
+    // Nos quedamos solo con hoy en adelante
+    GUIA.dias = (GUIA.dias||[]).filter(function(d){ return d >= hoy; });
+    GUIA.peliculas = (GUIA.peliculas||[]).filter(function(p){ return p.dia >= hoy; });
+    estado.dia = GUIA.dias.indexOf(hoy) >= 0 ? hoy : (GUIA.dias[0] || hoy);
+
+    document.getElementById("sello").innerHTML =
+      GUIA.total + " peliculas &middot; " + GUIA.dias.length + " dias";
+    document.getElementById("pieActualizado").textContent =
+      "Actualizado el " + (GUIA.generado_texto || "");
+
+    pintarDias();
+    pintarCanales();
+    pintar();
+    requestAnimationFrame(function(){ setTimeout(irALaHoraActual, 80); });
+  }
+
+  // ---- Barras de seleccion ----------------------------------------------
+  function pintarDias(){
+    var caja = document.getElementById("dias");
+    caja.innerHTML = "";
+    GUIA.dias.forEach(function(iso){
+      var e = etiquetaDia(iso);
+      var b = document.createElement("button");
+      b.className = "chip dia" + (iso === estado.dia ? " activo" : "");
+      b.innerHTML = e.arriba + '<span class="sub">' + e.abajo + "</span>";
+      b.onclick = function(){
+        estado.dia = iso; estado.texto = "";
+        document.getElementById("buscar").value = "";
+        pintarDias(); pintar();
+        window.scrollTo({ top:0, behavior:"smooth" });
+      };
+      caja.appendChild(b);
+    });
+  }
+
+  function pintarCanales(){
+    var caja = document.getElementById("canales");
+    caja.innerHTML = "";
+
+    var todos = document.createElement("button");
+    todos.className = "chip" + (estado.canal === "todos" ? " activo" : "");
+    todos.textContent = "Todos los canales";
+    todos.onclick = function(){ estado.canal = "todos"; pintarCanales(); pintar(); };
+    caja.appendChild(todos);
+
+    (GUIA.canales||[]).forEach(function(c){
+      var b = document.createElement("button");
+      b.className = "chip" + (estado.canal === c.clave ? " activo" : "");
+      b.innerHTML = '<span class="punto" style="background:' + c.color + '"></span>' + c.nombre;
+      b.onclick = function(){
+        estado.canal = (estado.canal === c.clave) ? "todos" : c.clave;
+        pintarCanales(); pintar();
+        window.scrollTo({ top:0, behavior:"smooth" });
+      };
+      caja.appendChild(b);
+    });
+  }
+
+  // ---- Pintar la cartelera ----------------------------------------------
+  function pintar(){
+    var buscando = estado.texto.trim().length >= 2;
+    var lista = GUIA.peliculas.filter(function(p){
+      if (estado.canal !== "todos" && p.canal !== estado.canal) return false;
+      if (buscando){
+        var t = normalizar(estado.texto);
+        return normalizar(p.titulo).indexOf(t) >= 0 ||
+               normalizar(p.titulo_original||"").indexOf(t) >= 0;
+      }
+      if (p.dia !== estado.dia) return false;
+      if (estado.soloNoche && minutosDe(p.inicio) < 18*60) return false;
+      return true;
+    });
+
+    var caja = document.getElementById("contenido");
+
+    if (!lista.length){
+      caja.innerHTML = '<div class="vacio"><div class="icono">&#127916;</div>' +
+        '<h3>' + (buscando ? "No encontre esa pelicula" : "No hay peliculas con este filtro") + '</h3>' +
+        '<p>' + (buscando ? "Prueba con otra parte del titulo."
+                          : "Prueba con otro canal, otro dia, o quita el filtro de la noche.") + '</p></div>';
+      return;
+    }
+
+    var html = "";
+
+    if (buscando){
+      html += bloque("Resultados de la busqueda", lista, true);
+    } else {
+      FRANJAS.forEach(function(f){
+        var delBloque = lista.filter(function(p){
+          var h = Math.floor(minutosDe(p.inicio)/60);
+          return h >= f.desde && h < f.hasta;
+        });
+        if (delBloque.length) html += bloque(f.nombre, delBloque, false, f.clave);
+      });
+    }
+
+    caja.innerHTML = html;
+
+    // Tocar una tarjeta para ver la sinopsis completa
+    Array.prototype.forEach.call(caja.querySelectorAll(".peli"), function(el){
+      el.onclick = function(){ el.classList.toggle("abierta"); };
+    });
+  }
+
+  function bloque(titulo, lista, conFecha, clave){
+    var h = '<div class="franja"' + (clave ? ' data-franja="' + clave + '"' : "") +
+            '><h2>' + titulo + '</h2><div class="linea"></div>' +
+            '<span class="cuenta">' + lista.length + '</span></div><div class="rejilla">';
+    lista.forEach(function(p){ h += tarjeta(p, conFecha); });
+    return h + "</div>";
+  }
+
+  // Al abrir la app en el dia de hoy, bajamos hasta la franja horaria
+  // en la que estamos, para no aterrizar en la madrugada.
+  function irALaHoraActual(){
+    if (estado.dia !== hoyEcuador() || estado.texto) return;
+    var hora = ahoraEcuador().getHours();
+    var actual = FRANJAS.filter(function(f){
+      return hora >= f.desde && hora < f.hasta;
+    })[0];
+    if (!actual) return;
+    var destino = document.querySelector('[data-franja="' + actual.clave + '"]');
+    if (!destino) return;
+    var alto = document.querySelector("header").offsetHeight;
+    var y = destino.getBoundingClientRect().top + window.pageYOffset - alto - 12;
+    window.scrollTo({ top: Math.max(y, 0), behavior: "auto" });
+  }
+
+  function tarjeta(p, conFecha){
+    var canal = (GUIA.canales||[]).filter(function(c){ return c.clave === p.canal; })[0]
+                || { nombre:p.canal, color:"#666" };
+
+    // Marcar la que se esta viendo ahora mismo
+    var enVivo = false;
+    var hoy = hoyEcuador();
+    if (p.dia === hoy){
+      var e = ahoraEcuador();
+      var ahora = e.getHours()*60 + e.getMinutes();
+      var ini = minutosDe(p.inicio), fin = minutosDe(p.fin);
+      if (fin <= ini) fin += 24*60;
+      enVivo = ahora >= ini && ahora < fin;
+    }
+
+    var dur = p.minutos ? (p.minutos >= 60
+              ? Math.floor(p.minutos/60) + "h " + dos(p.minutos%60) + "m"
+              : p.minutos + "m") : "";
+
+    var meta = [];
+    if (p.anio) meta.push(String(p.anio));
+    if (dur) meta.push(dur);
+    if (p.generos && p.generos.length) meta.push(p.generos.slice(0,2).join(", "));
+
+    var fechaTexto = "";
+    if (conFecha){
+      var et = etiquetaDia(p.dia);
+      fechaTexto = '<span class="dura">' + et.arriba + " " + et.abajo + "</span>";
+    }
+
+    var poster = p.poster
+      ? '<div class="poster" style="background-image:url(\'' + p.poster + '\')"></div>'
+      : '<div class="poster">' + SIN_POSTER + '</div>';
+
+    return '' +
+      '<article class="peli' + (enVivo ? " enVivo" : "") + '">' +
+        poster +
+        '<div class="cuerpo">' +
+          '<div class="horario">' +
+            '<span class="horas">' + p.inicio + '<span class="a">a</span>' + p.fin + '</span>' +
+            (enVivo ? '<span class="vivo">Al aire</span>' : "") +
+            fechaTexto +
+          '</div>' +
+          '<h3 class="nombre">' + escapar(p.titulo) + '</h3>' +
+          '<div class="meta">' +
+            '<span class="canal"><span class="punto" style="background:' + canal.color + '"></span>' +
+              escapar(canal.nombre) + '</span>' +
+            (p.puntuacion ? '<span class="nota">&#9733; ' + p.puntuacion + '</span>' : "") +
+            (meta.length ? '<span>' + escapar(meta.join(" · ")) + '</span>' : "") +
+          '</div>' +
+          (p.sinopsis ? '<p class="sinopsis">' + escapar(p.sinopsis) + '</p>' : "") +
+        '</div>' +
+      '</article>';
+  }
+
+  function escapar(t){
+    return String(t||"").replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  // ---- Controles ---------------------------------------------------------
+  var campo = document.getElementById("buscar");
+  var reloj = null;
+  campo.oninput = function(){
+    clearTimeout(reloj);
+    reloj = setTimeout(function(){ estado.texto = campo.value; pintar(); }, 180);
+  };
+
+  document.getElementById("btnSoloNoche").onclick = function(){
+    estado.soloNoche = !estado.soloNoche;
+    this.classList.toggle("activo", estado.soloNoche);
+    pintar();
+  };
+
+  // Repintar cada minuto para que "Al aire" siga siendo cierto
+  setInterval(function(){ if (GUIA && !estado.texto) pintar(); }, 60000);
+
+  cargar();
+
+  if ("serviceWorker" in navigator){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("sw.js").catch(function(){});
+    });
+  }
+})();
+</script>
+</body>
+</html>

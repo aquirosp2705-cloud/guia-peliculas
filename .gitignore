@@ -1,0 +1,12 @@
+# La clave de TMDB se queda solo en esta computadora
+clave-tmdb.txt
+
+# Basura de Windows / editores
+Thumbs.db
+desktop.ini
+.DS_Store
+__pycache__/
+*.pyc
+
+# Configuracion local del editor
+.claude/

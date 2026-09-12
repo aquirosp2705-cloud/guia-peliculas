@@ -1,0 +1,46 @@
+name: Actualizar cartelera
+
+# Cuando se ejecuta:
+#   - Todos los dias a las 05:00 y a las 15:00 de Ecuador.
+#     (GitHub usa hora UTC, y Ecuador es UTC-5, por eso van 5 horas mas tarde)
+#   - Tambien se puede lanzar a mano desde la pestana Actions.
+on:
+  schedule:
+    - cron: "0 10 * * *"    # 05:00 en Ecuador
+    - cron: "0 20 * * *"    # 15:00 en Ecuador
+  workflow_dispatch:
+
+# Necesario para que el robot pueda guardar la programacion en el repositorio
+permissions:
+  contents: write
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Bajar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Armar la guia de peliculas
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: python actualizar.py
+
+      - name: Guardar los cambios
+        run: |
+          git config user.name "Cartelera (robot)"
+          git config user.email "actions@github.com"
+          git add datos/guia.json datos/cache-peliculas.json
+          if git diff --staged --quiet; then
+            echo "La programacion no cambio. No hay nada que guardar."
+          else
+            git commit -m "Cartelera actualizada: $(date -u -d '-5 hours' '+%d/%m/%Y %H:%M') (Ecuador)"
+            git push
+          fi
