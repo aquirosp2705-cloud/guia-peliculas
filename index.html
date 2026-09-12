@@ -458,7 +458,16 @@
   var reloj = null;
   campo.oninput = function(){
     clearTimeout(reloj);
-    reloj = setTimeout(function(){ estado.texto = campo.value; pintar(); }, 180);
+    reloj = setTimeout(function(){
+      var habiaTexto = estado.texto.trim().length >= 2;
+      estado.texto = campo.value;
+      pintar();
+      if (estado.texto.trim().length >= 2){
+        window.scrollTo({ top:0, behavior:"auto" });     // al empezar la busqueda
+      } else if (habiaTexto){
+        irALaHoraActual();                                // al borrarla, volvemos
+      }
+    }, 180);
   };
 
   document.getElementById("btnSoloNoche").onclick = function(){
