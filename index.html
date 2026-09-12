@@ -185,6 +185,10 @@
 (function(){
   "use strict";
 
+  // Que el navegador no restaure solo la posicion de la pagina: si lo hace,
+  // pisa el salto a la franja horaria actual.
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+
   var GUIA = null;
   var estado = { dia:null, canal:"todos", texto:"", soloNoche:false };
 
@@ -276,7 +280,10 @@
     pintarDias();
     pintarCanales();
     pintar();
+    // Lo intentamos dos veces: la segunda ya con los afiches cargados,
+    // que es cuando las alturas de las tarjetas son las definitivas.
     requestAnimationFrame(function(){ setTimeout(irALaHoraActual, 80); });
+    setTimeout(irALaHoraActual, 700);
   }
 
   // ---- Barras de seleccion ----------------------------------------------
@@ -378,8 +385,11 @@
 
   // Al abrir la app en el dia de hoy, bajamos hasta la franja horaria
   // en la que estamos, para no aterrizar en la madrugada.
+  var ultimoSalto = null;
   function irALaHoraActual(){
     if (estado.dia !== hoyEcuador() || estado.texto) return;
+    // Si la usuaria ya movio la pagina por su cuenta, no se la movemos.
+    if (ultimoSalto !== null && Math.abs(window.pageYOffset - ultimoSalto) > 50) return;
     var hora = ahoraEcuador().getHours();
     var actual = FRANJAS.filter(function(f){
       return hora >= f.desde && hora < f.hasta;
@@ -388,8 +398,9 @@
     var destino = document.querySelector('[data-franja="' + actual.clave + '"]');
     if (!destino) return;
     var alto = document.querySelector("header").offsetHeight;
-    var y = destino.getBoundingClientRect().top + window.pageYOffset - alto - 12;
-    window.scrollTo({ top: Math.max(y, 0), behavior: "auto" });
+    var y = Math.max(destino.getBoundingClientRect().top + window.pageYOffset - alto - 12, 0);
+    window.scrollTo({ top: y, behavior: "auto" });
+    ultimoSalto = Math.round(window.pageYOffset);
   }
 
   function tarjeta(p, conFecha){
